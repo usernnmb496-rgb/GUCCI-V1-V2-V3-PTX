@@ -1,0 +1,1068 @@
+-- ═════════════════════════════════════
+-- Library & UI Setup
+-- ═════════════════════════════════════
+Players = game:GetService("Players")
+LocalPlayer = Players.LocalPlayer
+CoreGui = game:GetService("CoreGui")
+
+repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
+Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
+ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
+SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
+Options = Library.Options
+Toggles = Library.Toggles
+
+-- Global Notify helper (ใช้กับ Gucci)
+function Notify(title, desc, dur)
+    Library:Notify({ Title = title, Description = desc, Duration = dur or 3 })
+end
+
+-- ═════════════════════════════════════
+-- MenuGui Styling
+-- ═════════════════════════════════════
+function waitFor(parent, name, recursive, timeout)
+    timeout = timeout or 10
+    start = tick()
+    result = nil
+    while not result and tick() - start < timeout do
+        if recursive then
+            result = parent:FindFirstChild(name, true)
+        else
+            result = parent:FindFirstChild(name)
+        end
+        if not result then task.wait(0.1) end
+    end
+    return result
+end
+
+playerGui = LocalPlayer:WaitForChild("PlayerGui")
+menuGui = waitFor(playerGui, "MenuGui", true, 10)
+
+function StyleMenuUI()
+    player = game:GetService("Players").LocalPlayer
+    playerGui = player:WaitForChild("PlayerGui")
+    menuGui = playerGui:WaitForChild("MenuGui")
+    menu = menuGui:WaitForChild("Menu")
+
+    black = Color3.fromRGB(0, 0, 0)
+    blue = Color3.fromRGB(30, 100, 200)
+    white = Color3.fromRGB(255, 255, 255)
+    cornerRadius = UDim.new(0, 0)
+
+    function roundCorners(obj)
+        corner = obj:FindFirstChildOfClass("UICorner")
+        if corner then
+            corner.CornerRadius = cornerRadius
+        else
+            corner = Instance.new("UICorner")
+            corner.CornerRadius = cornerRadius
+            corner.Parent = obj
+        end
+    end
+
+    function addPurpleBlueGradient(obj, rotation)
+        gradient = obj:FindFirstChildOfClass("UIGradient")
+        if not gradient then gradient = Instance.new("UIGradient") end
+        gradient.Color = ColorSequence.new{
+            ColorSequenceKeypoint.new(0, white),
+            ColorSequenceKeypoint.new(1, blue)
+        }
+        gradient.Rotation = rotation or 45
+        gradient.Parent = obj
+    end
+
+    tabBarSizeY = 0.9999
+    tabBar = menu:WaitForChild("TabBar")
+    tabBar.BackgroundColor3 = black
+    tabBar.BackgroundTransparency = 0.28
+    tabBar.Size = UDim2.new(tabBar.Size.X.Scale, tabBar.Size.X.Offset, tabBarSizeY, tabBar.Size.Y.Offset)
+    roundCorners(tabBar)
+
+    tabContents = menu:WaitForChild("TabContents")
+    for _, frame in ipairs(tabContents:GetChildren()) do
+        if frame:IsA("Frame") then
+            frame.BackgroundColor3 = black
+            frame.BackgroundTransparency = 0.7
+            roundCorners(frame)
+
+            title = frame:FindFirstChild("Title")
+            if title then
+                title.BackgroundColor3 = black
+                title.BackgroundTransparency = 0.4
+                roundCorners(title)
+                currentSize = title.Size
+                title.Size = UDim2.new(currentSize.X.Scale * 0.975, currentSize.X.Offset, currentSize.Y.Scale, currentSize.Y.Offset)
+            end
+
+            sortingTabs = frame:FindFirstChild("SortingTabs")
+            if sortingTabs then
+                sortingTabs.BackgroundColor3 = black
+                sortingTabs.BackgroundTransparency = 0.55
+                roundCorners(sortingTabs)
+            end
+
+            contents = frame:FindFirstChild("Contents")
+            if contents then
+                contents.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                contents.BackgroundTransparency = 0.55
+                roundCorners(contents)
+                addPurpleBlueGradient(contents, 45)
+                contents.ChildAdded:Connect(function()
+                    contents.BackgroundTransparency = 0
+                    TweenService:Create(contents, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                        BackgroundTransparency = 0.55
+                    }):Play()
+                end)
+            end
+
+            favoritesFrame = frame:FindFirstChild("FavoritesFrame")
+            if favoritesFrame then
+                favoritesFrame.BackgroundColor3 = black
+                favoritesFrame.BackgroundTransparency = 1
+                roundCorners(favoritesFrame)
+            end
+
+            if contents then
+                for _, item in ipairs(contents:GetChildren()) do
+                    fav = item:FindFirstChild("Favorite")
+                    if fav and (fav:IsA("ImageLabel") or fav:IsA("ImageButton")) then
+                        fav.ImageTransparency = 1
+                        fav.BackgroundTransparency = 1
+                    end
+                end
+            end
+        end
+    end
+
+    for _, desc in ipairs(menuGui:GetDescendants()) do
+        if desc.Name == "MeterFrame" and desc:IsA("GuiObject") then
+            desc.BackgroundColor3 = black
+            desc.BackgroundTransparency = 0.4
+            roundCorners(desc)
+        end
+    end
+end
+
+StyleMenuUI()
+
+-- ═════════════════════════════════════
+-- Window & Tabs
+-- ═════════════════════════════════════
+Library.ForceCheckbox = false
+Window = Library:CreateWindow({
+    Title = "PTX",
+    Footer = "Project PTX GUCCI | FTAP",
+    Icon = 74482206150919,
+    NotifySide = "Right",
+    ShowCustomCursor = false,
+    EnableCompacting = true,
+    SidebarCompacted = true,
+    BackgroundImage = "rbxassetid://126537482053881",
+})
+
+Tabs = {
+    Main = Window:AddTab("Main", "house"),
+    Player = Window:AddTab("Player", "person-standing"),
+    Defense = Window:AddTab("Protections", "shield-plus"),
+    Target = Window:AddTab("Loops", "sword"),
+    Grab = Window:AddTab("Grabs", "hand-metal"),
+    Visual = Window:AddTab("Visuals", "eye"),
+    Server = Window:AddTab("Servers", "atom"),
+    ToyTab = Window:AddTab("Toys", "shapes"),
+    FigureTab = Window:AddTab("Figure", "mouse"),
+    TpTab = Window:AddTab("Tp", "map-pin"),
+    Keybinds = Window:AddTab("Keybind", "keyboard"),
+    MapBreak = Window:AddTab("MapBreaks", "map"),
+    UISettings = Window:AddTab("UI Settings", "cog"),
+    Gucci = Window:AddTab("Gucci", "shield"), -- หน้าที่ 2 (Anti-Grab)
+}
+
+-- ═════════════════════════════════════
+-- MAIN TAB (หน้าแรก)
+-- ═════════════════════════════════════
+do
+    ProfileGroup = Tabs.Main:AddLeftGroupbox("Profile", "user")
+    UtilityGroup = Tabs.Main:AddRightGroupbox("Utilities", "settings")
+    AboutGroup = Tabs.Main:AddRightGroupbox("About", "info")
+
+    do
+        avatarview = ProfileGroup:AddViewport("Just your avatar", {
+            Object = LocalPlayer.Character,
+            Camera = Instance.new("Camera"),
+            Interactive = true,
+            AutoFocus = true,
+            Height = 400,
+        })
+
+        LocalPlayer.CharacterAdded:Connect(function(chara)
+            task.wait(1)
+            avatarview:SetObject(chara:Clone())
+        end)
+    end
+
+    ProfileGroup:AddLabel("Good Evening, " .. LocalPlayer.DisplayName, true)
+
+    UtilityGroup:AddButton({
+        Text = "Rejoin",
+        Callback = function()
+            Library:Notify({ Title = "LOLL", Description = "Rejoining...", Duration = 2 })
+            task.wait(0.5)
+            game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+        end
+    })
+
+    UtilityGroup:AddButton({
+        Text = "Server-Hop",
+        Callback = function()
+            Library:Notify({ Title = "LOLL", Description = "Hopping to new server...", Duration = 2 })
+            task.wait(0.5)
+            game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, tostring(math.random(1, 9999999)), LocalPlayer)
+        end
+    })
+
+    AboutGroup:AddLabel("━━━━━━━━━━━━━━━━━━━━━━━━━━━━", true)
+    AboutGroup:AddLabel("  GUCCI PTX· Project", true)
+    AboutGroup:AddLabel("━━━━━━━━━━━━━━━━━━━━━━━━━━━━", true)
+    AboutGroup:AddLabel("              BY", true)
+    AboutGroup:AddLabel("  PTX_GVLxTSWxNFLxFR • LeontinesfJkFF", true)
+    AboutGroup:AddLabel("━━━━━━━━━♥♥my girlfriend♥♥━━━━━━━━━", true)
+    AboutGroup:AddLabel("         LMxMRL • Kapan_y13", true)
+    AboutGroup:AddLabel("      ♥♥ I love YURI so much♥♥", true)
+    AboutGroup:AddLabel("━━━━━━━━━━━━━━━━━━━━━━━━━━━━", true)
+end
+
+-- ═════════════════════════════════════
+-- GUCCI TAB (หน้าที่ 2) — Unified v1 + v2 + v3
+-- ═════════════════════════════════════
+local GucciGroup = Tabs.Gucci:AddLeftGroupbox("Gucci Anti-Grab", "shield")
+
+do
+    -- ── Shared state ────────────────────────────────────────
+    local G = {
+        Enabled  = false,
+        Version  = "v1",
+        Type     = "CreatureBlobman",
+    }
+
+    local GucciTypes = {
+        ["Blobman"]      = "CreatureBlobman",
+        ["Tractor"]      = "TractorGreen",
+        ["Santa Sleigh"] = "SantaSleigh",
+    }
+
+    local function getCharParts()
+        local char = LocalPlayer.Character
+        if not char then return nil, nil end
+        return char:FindFirstChild('Humanoid'), char:FindFirstChild('HumanoidRootPart')
+    end
+
+    -- ═══════════════════════════════════════════════════════
+    -- V1 — Original Gucci (gucciblob loop)
+    -- ═══════════════════════════════════════════════════════
+    local V1 = {
+        itm = nil, sp = nil, sv = nil, humconnection = nil,
+        hum2 = nil, hrp2 = nil, running = false,
+        inexistance = {}, DELAY = 0.15, charConn = nil,
+    }
+    V1.hum2, V1.hrp2 = getCharParts()
+
+    local function V1_diddle()
+        if V1.itm then
+            for _, prt in pairs(V1.itm:GetChildren()) do
+                if prt:IsA('BasePart') then prt.CanCollide = false end
+            end
+        end
+        if V1.hrp2 then
+            V1.hrp2.CFrame = V1.sp
+            V1.hrp2.AssemblyLinearVelocity = V1.sv
+        end
+        if V1.hum2 then
+            V1.hum2:GetPropertyChangedSignal('SeatPart'):Once(V1_diddle)
+        end
+    end
+
+    local function V1_Stop()
+        if V1.itm and V1.itm.Parent then
+            task.spawn(function() pcall(function() DestroyToy:FireServer(V1.itm) end) end)
+        end
+        V1.itm = nil; V1.sp = nil; V1.sv = nil
+        V1.humconnection = nil; V1.inexistance = {}
+        V1.running = false
+        if V1.charConn then V1.charConn:Disconnect() V1.charConn = nil end
+    end
+
+    local function V1_loop()
+        if V1.running then return end
+        V1.running = true
+        local guccion = false
+        local tickyticky = tick()
+        local GUTYPE = G.Type
+
+        while G.Enabled and G.Version == "v1" do
+            V1.hum2, V1.hrp2 = getCharParts()
+            if V1.hum2 and V1.hrp2 then
+                local dt = tick() - tickyticky
+                tickyticky = tick()
+
+                if V1.itm and V1.itm:FindFirstChild('VehicleSeat') then
+                    local occupant = V1.itm.VehicleSeat.Occupant
+                    if occupant and occupant ~= V1.hum2 then
+                        task.spawn(function() pcall(function() DestroyToy:FireServer(V1.itm) end) end)
+                        V1.itm = nil; guccion = false; V1.inexistance = {}
+                        task.wait(V1.DELAY)
+                        if LocalPlayer.CanSpawnToy.Value then
+                            task.spawn(function()
+                                pcall(function() SpawnToy:InvokeServer(GUTYPE, V1.hrp2.CFrame * CFrame.new(0, 100000000, 10), Vector3.new(0,0,0)) end)
+                            end)
+                        end
+                        task.wait(V1.DELAY)
+                        continue
+                    end
+                end
+
+                if V1.itm and V1.itm.Parent and not ((V1.itm:FindFirstChild('HumanoidRootPart') or V1.itm:FindFirstChild('SoundPart')) and V1.itm:FindFirstChild('VehicleSeat') and (not V1.itm.VehicleSeat.Occupant or V1.itm.VehicleSeat.Occupant ~= V1.hum2) or V1.inexistance[V1.itm] < 1) then
+                    task.spawn(function() pcall(function() DestroyToy:FireServer(V1.itm) end) end)
+                else
+                    local toyFolder = workspace:FindFirstChild(LocalPlayer.Name .. 'SpawnedInToys')
+                    V1.itm = toyFolder and toyFolder:FindFirstChild(GUTYPE)
+                end
+
+                if not V1.sp or not V1.hum2.SeatPart then
+                    V1.sp = V1.hrp2.CFrame
+                    V1.sv = V1.hrp2.AssemblyLinearVelocity
+                end
+
+                if V1.humconnection ~= V1.hum2 then
+                    V1.humconnection = V1.hum2
+                    V1.hum2:GetPropertyChangedSignal('SeatPart'):Once(V1_diddle)
+                end
+
+                local waitFlag = true
+
+                if V1.itm then
+                    V1.inexistance[V1.itm] = (V1.inexistance[V1.itm] or 0) + dt
+
+                    if (V1.itm:FindFirstChild('HumanoidRootPart') or V1.itm:FindFirstChild('SoundPart')) and V1.itm:FindFirstChild('VehicleSeat') and (not V1.itm.VehicleSeat.Occupant or V1.itm.VehicleSeat.Occupant == V1.hum2) then
+                        if not guccion then
+                            (V1.itm:FindFirstChild('HumanoidRootPart') or V1.itm:FindFirstChild('SoundPart')).AssemblyLinearVelocity = Vector3.new(0,0,0)
+                        end
+
+                        local diddy = V1.itm.VehicleSeat
+                        diddy.Parent = nil
+                        diddy.Parent = V1.itm
+
+                        if (V1.hrp2.CFrame.Position - (V1.itm:FindFirstChild('HumanoidRootPart') or V1.itm:FindFirstChild('SoundPart')).CFrame.Position).Magnitude < 28 then
+                            for _, prt in pairs(V1.itm:GetChildren()) do
+                                if prt:IsA('BasePart') and prt.CanQuery then
+                                    SetNetOwner:FireServer(prt, CFrame.lookAt(V1.hrp2.CFrame.Position, prt.CFrame.Position))
+                                end
+                            end
+                        end
+
+                        if not V1.hum2.SeatPart then
+                            V1.hum2.Sit = false
+                        else
+                            waitFlag = false
+                            task.wait(V1.DELAY)
+                        end
+
+                        if V1.hrp2 and V1.hum2 and (V1.itm:FindFirstChild('HumanoidRootPart') or V1.itm:FindFirstChild('SoundPart')) and V1.itm:FindFirstChild('VehicleSeat') and (not V1.itm.VehicleSeat.Occupant or V1.itm.VehicleSeat.Occupant == V1.hum2) then
+                            local ragdolled = V1.hum2:FindFirstChild('Ragdolled')
+                            if ragdolled and ragdolled.Value then guccion = false end
+
+                            if V1.itm.VehicleSeat.Occupant == V1.hum2 then
+                                guccion = true
+                            elseif not guccion then
+                                task.wait(V1.DELAY)
+                                waitFlag = false
+                                if (V1.itm:FindFirstChild('HumanoidRootPart') or V1.itm:FindFirstChild('SoundPart')) and V1.itm:FindFirstChild('VehicleSeat') and (not V1.itm.VehicleSeat.Occupant or V1.itm.VehicleSeat.Occupant == V1.hum2) then
+                                    local ragdolled2 = V1.hum2:FindFirstChild('Ragdolled')
+                                    if not ragdolled2 or not ragdolled2.Value then
+                                        V1.itm.VehicleSeat:Sit(V1.hum2)
+                                        Ragdoll:FireServer(V1.hrp2, 0.016)
+                                    end
+                                end
+                            end
+
+                            if guccion then
+                                (V1.itm:FindFirstChild('HumanoidRootPart') or V1.itm:FindFirstChild('SoundPart')).AssemblyLinearVelocity = Vector3.new(0, 1e15, 0)
+                            else
+                                if V1.inexistance[V1.itm] >= game.Stats.Network.ServerStatsItem['Data Ping']:GetValue() / 250 then
+                                    task.spawn(function() pcall(function() DestroyToy:FireServer(V1.itm) end) end)
+                                    V1.hum2.Sit = true
+                                end
+                            end
+                        end
+                    else
+                        if guccion then V1.hum2.Sit = true end
+                        guccion = false
+                        if V1.inexistance[V1.itm] >= 1 then
+                            task.spawn(function() pcall(function() DestroyToy:FireServer(V1.itm) end) end)
+                            if LocalPlayer.CanSpawnToy.Value then
+                                task.spawn(function()
+                                    pcall(function() SpawnToy:InvokeServer(GUTYPE, V1.hrp2.CFrame * CFrame.new(0, 100000000, 10), Vector3.new(0,0,0)) end)
+                                end)
+                            end
+                        end
+                    end
+                else
+                    if guccion then guccion = false V1.hum2.Sit = true end
+                    if LocalPlayer.CanSpawnToy.Value then
+                        task.spawn(function()
+                            pcall(function() SpawnToy:InvokeServer(GUTYPE, V1.hrp2.CFrame * CFrame.new(0, 100000000, 10), Vector3.new(0,0,0)) end)
+                        end)
+                    end
+                end
+
+                if waitFlag then
+                    task.wait(V1.DELAY)
+                    V1.hum2.Sit = false
+                end
+            else
+                task.wait(V1.DELAY)
+            end
+        end
+        V1.running = false
+    end
+
+    local function V1_Start()
+        V1_Stop()
+        V1.charConn = LocalPlayer.CharacterAdded:Connect(function(c)
+            if not G.Enabled or G.Version ~= "v1" then return end
+            if V1.itm and V1.itm.Parent then
+                task.spawn(function() pcall(function() DestroyToy:FireServer(V1.itm) end) end)
+            end
+            V1.itm = nil; V1.inexistance = {}; V1.humconnection = nil
+            V1.sp = nil; V1.sv = nil; V1.running = false
+            c:WaitForChild('Humanoid', 10)
+            c:WaitForChild('HumanoidRootPart', 10)
+            V1.hum2, V1.hrp2 = getCharParts()
+            task.wait(0.5)
+            task.spawn(V1_loop)
+        end)
+        task.spawn(V1_loop)
+    end
+
+    -- ═══════════════════════════════════════════════════════
+    -- V2 — Alax VI Gucci (GucciV2Spawn)
+    -- ═══════════════════════════════════════════════════════
+    local V2 = {
+        active = false, runId = 0,
+        spawnTask = nil, seatTask = nil,
+    }
+
+    local function FWC2(Parent, Name, Time)
+        return Parent:FindFirstChild(Name) or Parent:WaitForChild(Name, Time or 3)
+    end
+
+    local function V2_toy_spawn(name, cframe, vector)
+        local ToySpawn = ReplicatedStorage.MenuToys.SpawnToyRemoteFunction
+        local InPlot = LocalPlayer:FindFirstChild("InPlot")
+        local InOwnerPlot = LocalPlayer:FindFirstChild("InOwnedPlot")
+        local CanSpawn = LocalPlayer:FindFirstChild("CanSpawnToy")
+
+        while InPlot and InPlot.Value and InOwnerPlot and not InOwnerPlot.Value do task.wait(0.01) end
+        while CanSpawn and not CanSpawn.Value do task.wait(0.01) end
+
+        task.spawn(function() pcall(function() ToySpawn:InvokeServer(name, cframe, vector or Vector3.new()) end) end)
+
+        local BackPack = Workspace:FindFirstChild(LocalPlayer.Name .. 'SpawnedInToys')
+        if not BackPack then return false end
+
+        local SpawnedToy, conn
+        conn = BackPack.ChildAdded:Connect(function(toy)
+            if toy.Name == name and toy:IsA("Model") then
+                SpawnedToy = toy; conn:Disconnect()
+            end
+        end)
+
+        local t0 = tick()
+        while not SpawnedToy do
+            if tick() - t0 < 3 then task.wait(0.01)
+            else if conn then conn:Disconnect() end return false end
+        end
+        return SpawnedToy
+    end
+
+    local function V2_Spawn()
+        if not V2.active then return end
+        V2.runId = V2.runId + 1
+        local MyId = V2.runId
+
+        local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+        local hum = FWC2(char, "Humanoid")
+
+        hum.Sit = true; task.wait(0.02)
+        hum.Sit = false; task.wait(0.02)
+
+        task.spawn(function()
+            local t0 = tick()
+            while tick() - t0 < 0.8 do
+                for _, v in pairs(char:GetChildren()) do
+                    if v:IsA('BasePart') then v.Velocity = Vector3.new() end
+                end
+                task.wait(0.01)
+            end
+        end)
+
+        local autoGucciT, sitJumpT, Blob, BHead = true, false, nil, nil
+
+        task.spawn(function()
+            while not Blob and MyId == V2.runId do task.wait(0.01) end
+            if MyId ~= V2.runId then return end
+            BHead = FWC2(Blob, "Head")
+            local HitBox = FWC2(Blob, "GrabbableHitbox")
+            while MyId == V2.runId and BHead and
+                (not BHead:FindFirstChild("PartOwner") or BHead.PartOwner.Value ~= LocalPlayer.Name) do
+                if HitBox then
+                    pcall(function() ReplicatedStorage.GrabEvents.SetNetworkOwner:FireServer(HitBox, HitBox.CFrame) end)
+                end
+                task.wait(0.01)
+            end
+        end)
+
+        local hrp = FWC2(char, "HumanoidRootPart")
+        Blob = V2_toy_spawn("CreatureBlobman", hrp.CFrame * CFrame.new(0, 0, -5), Vector3.new(0, -15.716, 0))
+        if not Blob then return end
+
+        local Seat = FWC2(Blob, "VehicleSeat")
+
+        task.defer(function()
+            if not (char or hum) then return end
+            local t0 = tick()
+            while autoGucciT and MyId == V2.runId and tick() - t0 < 0.3 do
+                if Blob and Blob.Parent and Seat and Seat.Parent and Seat.Occupant ~= hum then
+                    Seat:Sit(hum)
+                end
+                task.wait(0.03)
+                if char and hum and hum.Parent then
+                    hum:ChangeState(Enum.HumanoidStateType.Jumping)
+                end
+                task.wait(0.03)
+            end
+            autoGucciT = false; sitJumpT = false
+        end)
+        sitJumpT = true
+
+        task.defer(function()
+            while sitJumpT and MyId == V2.runId do
+                if char and hrp and hrp.Parent then
+                    pcall(function()
+                        ReplicatedStorage.CharacterEvents.RagdollRemote:FireServer(hrp, 0.095)
+                    end)
+                end
+                task.wait(0.01)
+            end
+        end)
+
+        task.wait(0.4)
+        if MyId ~= V2.runId then return end
+
+        hum.Sit = false
+        Blob.Name = "Gucci"
+
+        for _, v in pairs(Blob:GetChildren()) do
+            if v:IsA("BasePart") then
+                v.CanCollide = false; v.CanTouch = false; v.CanQuery = false
+            end
+        end
+
+        task.defer(function()
+            while MyId == V2.runId and Blob and BHead do
+                BHead.CFrame = CFrame.new(BHead.Position.X, 1e5, BHead.Position.Z)
+                task.wait(0.01)
+            end
+        end)
+
+        local ok, contents = pcall(function()
+            return LocalPlayer.PlayerGui.MenuGui.Menu.TabContents.ToyDestroy.Contents
+        end)
+        if ok and contents then
+            local BackPack = Workspace:FindFirstChild(LocalPlayer.Name .. 'SpawnedInToys')
+            local index
+            if BackPack then
+                for i, v in pairs(BackPack:GetChildren()) do
+                    if v.Name == "Gucci" then index = i break end
+                end
+            end
+            if index then
+                for i, v in ipairs(contents:GetChildren()) do
+                    if v.Name == "CreatureBlobman" and i == index then
+                        local view = v:FindFirstChild("ViewItemButton")
+                        if view then
+                            view.Text = "GUCCI"; view.TextScaled = true
+                            local lowRes = view:FindFirstChild("LowResImage")
+                            if lowRes then lowRes.Image = "" end
+                        end
+                        break
+                    end
+                end
+            end
+        end
+    end
+
+    local function V2_Stop()
+        V2.active = false
+        V2.runId = V2.runId + 1
+        if V2.spawnTask then task.cancel(V2.spawnTask) V2.spawnTask = nil end
+        if V2.seatTask then task.cancel(V2.seatTask) V2.seatTask = nil end
+        local BackPack = Workspace:FindFirstChild(LocalPlayer.Name .. 'SpawnedInToys')
+        if BackPack then
+            for _, v in pairs(BackPack:GetChildren()) do
+                if v.Name == "Gucci" or v.Name == "CreatureBlobman" then
+                    pcall(function() ReplicatedStorage.MenuToys.DestroyToy:FireServer(v) end)
+                end
+            end
+        end
+    end
+
+    local function V2_Start()
+        V2_Stop()
+        V2.active = true
+        V2.spawnTask = task.spawn(function()
+            while V2.active do
+                local BackPack = Workspace:FindFirstChild(LocalPlayer.Name .. "SpawnedInToys")
+                local gucci = BackPack and BackPack:FindFirstChild("Gucci")
+                if not gucci then
+                    V2_Spawn()
+                    Notify("Gucci v2", "Gucci v2 Spawned!", 2)
+                end
+                task.wait(0.5)
+            end
+        end)
+        V2.seatTask = task.spawn(function()
+            while V2.active do
+                local char = LocalPlayer.Character
+                local hum = char and char:FindFirstChild("Humanoid")
+                if hum and hum.SeatPart then
+                    local seatParent = hum.SeatPart.Parent
+                    if seatParent and (seatParent.Name == "Gucci" or seatParent.Name == "CreatureBlobman") then
+                        local isOurGucci = false
+                        local BackPack = Workspace:FindFirstChild(LocalPlayer.Name .. 'SpawnedInToys')
+                        if BackPack then
+                            for _, v in pairs(BackPack:GetChildren()) do
+                                if v == seatParent then isOurGucci = true break end
+                            end
+                        end
+                        if isOurGucci then
+                            Notify("Gucci v2", "Someone sat on your Gucci! Respawning...", 3)
+                            pcall(function() ReplicatedStorage.MenuToys.DestroyToy:FireServer(seatParent) end)
+                            task.wait(0.2)
+                            if V2.active then
+                                V2_Spawn()
+                                Notify("Gucci v2", "Gucci v2 Restored!", 2)
+                            end
+                        end
+                    end
+                end
+                task.wait(0.3)
+            end
+        end)
+    end
+
+    -- ═══════════════════════════════════════════════════════
+    -- V3 — XOCU Gucci (gucciblob with type support)
+    -- ═══════════════════════════════════════════════════════
+    local V3 = {
+        itm = nil, sp = nil, sv = nil, humconnection = nil,
+        hum2 = nil, hrp2 = nil, running = false,
+        inexistance = {}, charConn = nil,
+    }
+    V3.hum2, V3.hrp2 = getCharParts()
+
+    local function V3_diddle()
+        if V3.itm then
+            for _, prt in pairs(V3.itm:GetChildren()) do
+                if prt:IsA('BasePart') then prt.CanCollide = false end
+            end
+        end
+        if V3.hrp2 then
+            V3.hrp2.CFrame = V3.sp
+            V3.hrp2.AssemblyLinearVelocity = V3.sv
+        end
+        if V3.hum2 then
+            V3.hum2:GetPropertyChangedSignal('SeatPart'):Once(V3_diddle)
+        end
+    end
+
+    local function V3_Stop()
+        if V3.itm and V3.itm.Parent then
+            task.spawn(function() pcall(function() DestroyToy:FireServer(V3.itm) end) end)
+        end
+        V3.itm = nil; V3.sp = nil; V3.sv = nil
+        V3.humconnection = nil; V3.inexistance = {}
+        V3.running = false
+        if V3.charConn then V3.charConn:Disconnect() V3.charConn = nil end
+    end
+
+    local function V3_loop()
+        if V3.running then return end
+        V3.running = true
+        local guccion = false
+        local tickyticky = tick()
+        local GUTYPE = G.Type
+
+        while G.Enabled and G.Version == "v3" do
+            V3.hum2, V3.hrp2 = getCharParts()
+            if V3.hum2 and V3.hrp2 then
+                local dt = tick() - tickyticky
+                tickyticky = tick()
+
+                if V3.itm and V3.itm:FindFirstChild('VehicleSeat') then
+                    local occupant = V3.itm.VehicleSeat.Occupant
+                    if occupant and occupant ~= V3.hum2 then
+                        task.spawn(function() pcall(function() DestroyToy:FireServer(V3.itm) end) end)
+                        V3.itm = nil; guccion = false; V3.inexistance = {}
+                        task.wait(0.1)
+                        if LocalPlayer.CanSpawnToy.Value then
+                            task.spawn(function()
+                                pcall(function() SpawnToy:InvokeServer(GUTYPE, V3.hrp2.CFrame * CFrame.new(0, 100000000, 10), Vector3.new(0,0,0)) end)
+                            end)
+                        end
+                        task.wait()
+                        continue
+                    end
+                end
+
+                if V3.itm and V3.itm.Parent and not ((V3.itm:FindFirstChild('HumanoidRootPart') or V3.itm:FindFirstChild('SoundPart')) and V3.itm:FindFirstChild('VehicleSeat') and (not V3.itm.VehicleSeat.Occupant or V3.itm.VehicleSeat.Occupant ~= V3.hum2) or V3.inexistance[V3.itm] < 1) then
+                    task.spawn(function() pcall(function() DestroyToy:FireServer(V3.itm) end) end)
+                else
+                    local toyFolder = workspace:FindFirstChild(LocalPlayer.Name .. 'SpawnedInToys')
+                    V3.itm = toyFolder and toyFolder:FindFirstChild(GUTYPE)
+                end
+
+                if not V3.sp or not V3.hum2.SeatPart then
+                    V3.sp = V3.hrp2.CFrame
+                    V3.sv = V3.hrp2.AssemblyLinearVelocity
+                end
+
+                if V3.humconnection ~= V3.hum2 then
+                    V3.humconnection = V3.hum2
+                    V3.hum2:GetPropertyChangedSignal('SeatPart'):Once(V3_diddle)
+                end
+
+                local waitFlag = true
+
+                if V3.itm then
+                    V3.inexistance[V3.itm] = (V3.inexistance[V3.itm] or 0) + dt
+
+                    if (V3.itm:FindFirstChild('HumanoidRootPart') or V3.itm:FindFirstChild('SoundPart')) and V3.itm:FindFirstChild('VehicleSeat') and (not V3.itm.VehicleSeat.Occupant or V3.itm.VehicleSeat.Occupant == V3.hum2) then
+                        if not guccion then
+                            (V3.itm:FindFirstChild('HumanoidRootPart') or V3.itm:FindFirstChild('SoundPart')).AssemblyLinearVelocity = Vector3.new(0,0,0)
+                        end
+
+                        local diddy = V3.itm.VehicleSeat
+                        diddy.Parent = nil
+                        diddy.Parent = V3.itm
+
+                        if (V3.hrp2.CFrame.Position - (V3.itm:FindFirstChild('HumanoidRootPart') or V3.itm:FindFirstChild('SoundPart')).CFrame.Position).Magnitude < 28 then
+                            for _, prt in pairs(V3.itm:GetChildren()) do
+                                if prt:IsA('BasePart') and prt.CanQuery then
+                                    SetNetOwner:FireServer(prt, CFrame.lookAt(V3.hrp2.CFrame.Position, prt.CFrame.Position))
+                                end
+                            end
+                        end
+
+                        if not V3.hum2.SeatPart then
+                            V3.hum2.Sit = false
+                        else
+                            waitFlag = false
+                            task.wait()
+                        end
+
+                        if V3.hrp2 and V3.hum2 and (V3.itm:FindFirstChild('HumanoidRootPart') or V3.itm:FindFirstChild('SoundPart')) and V3.itm:FindFirstChild('VehicleSeat') and (not V3.itm.VehicleSeat.Occupant or V3.itm.VehicleSeat.Occupant == V3.hum2) then
+                            local ragdolled = V3.hum2:FindFirstChild('Ragdolled')
+                            if ragdolled and ragdolled.Value then guccion = false end
+
+                            if V3.itm.VehicleSeat.Occupant == V3.hum2 then
+                                guccion = true
+                            elseif not guccion then
+                                task.wait()
+                                waitFlag = false
+                                if (V3.itm:FindFirstChild('HumanoidRootPart') or V3.itm:FindFirstChild('SoundPart')) and V3.itm:FindFirstChild('VehicleSeat') and (not V3.itm.VehicleSeat.Occupant or V3.itm.VehicleSeat.Occupant == V3.hum2) then
+                                    local ragdolled2 = V3.hum2:FindFirstChild('Ragdolled')
+                                    if not ragdolled2 or not ragdolled2.Value then
+                                        V3.itm.VehicleSeat:Sit(V3.hum2)
+                                        Ragdoll:FireServer(V3.hrp2, 0.016)
+                                    end
+                                end
+                            end
+
+                            if guccion then
+                                (V3.itm:FindFirstChild('HumanoidRootPart') or V3.itm:FindFirstChild('SoundPart')).AssemblyLinearVelocity = Vector3.new(0, 1e15, 0)
+                            else
+                                if V3.inexistance[V3.itm] >= game.Stats.Network.ServerStatsItem['Data Ping']:GetValue() / 250 then
+                                    task.spawn(function() pcall(function() DestroyToy:FireServer(V3.itm) end) end)
+                                    V3.hum2.Sit = true
+                                end
+                            end
+                        end
+                    else
+                        if guccion then V3.hum2.Sit = true end
+                        guccion = false
+                        if V3.inexistance[V3.itm] >= 1 then
+                            task.spawn(function() pcall(function() DestroyToy:FireServer(V3.itm) end) end)
+                            if LocalPlayer.CanSpawnToy.Value then
+                                task.spawn(function()
+                                    pcall(function() SpawnToy:InvokeServer(GUTYPE, V3.hrp2.CFrame * CFrame.new(0, 100000000, 10), Vector3.new(0,0,0)) end)
+                                end)
+                            end
+                        end
+                    end
+                else
+                    if guccion then guccion = false V3.hum2.Sit = true end
+                    if LocalPlayer.CanSpawnToy.Value then
+                        task.spawn(function()
+                            pcall(function() SpawnToy:InvokeServer(GUTYPE, V3.hrp2.CFrame * CFrame.new(0, 100000000, 10), Vector3.new(0,0,0)) end)
+                        end)
+                    end
+                end
+
+                if waitFlag then
+                    task.wait()
+                    V3.hum2.Sit = false
+                end
+            else
+                task.wait()
+            end
+        end
+        V3.running = false
+    end
+
+    local function V3_Start()
+        V3_Stop()
+        V3.charConn = LocalPlayer.CharacterAdded:Connect(function(c)
+            if not G.Enabled or G.Version ~= "v3" then return end
+            if V3.itm and V3.itm.Parent then
+                task.spawn(function() pcall(function() DestroyToy:FireServer(V3.itm) end) end)
+            end
+            V3.itm = nil; V3.inexistance = {}; V3.humconnection = nil
+            V3.sp = nil; V3.sv = nil; V3.running = false
+            c:WaitForChild('Humanoid', 10)
+            c:WaitForChild('HumanoidRootPart', 10)
+            V3.hum2, V3.hrp2 = getCharParts()
+            task.wait(0.5)
+            task.spawn(V3_loop)
+        end)
+        task.spawn(V3_loop)
+    end
+
+    -- ═══════════════════════════════════════════════════════
+    -- Controller (unified UI)
+    -- ═══════════════════════════════════════════════════════
+    local function StopAll()
+        V1_Stop(); V2_Stop(); V3_Stop()
+    end
+
+    local function StartCurrent()
+        if not G.Enabled then return end
+        if G.Version == "v1" then V1_Start()
+        elseif G.Version == "v2" then V2_Start()
+        elseif G.Version == "v3" then V3_Start() end
+    end
+
+    GucciGroup:AddDropdown("GucciVersionSelect", {
+        Text = "Gucci Version",
+        Values = { "v1 (Original)", "v2 (Alax)", "v3 (XOCU)" },
+        Default = "v1 (Original)",
+        Multi = false,
+        Callback = function(Value)
+            local newVer = Value:match("^v(%d)") or "v1"
+            if G.Enabled and newVer ~= G.Version then
+                StopAll()
+                G.Version = newVer
+                task.wait(0.2)
+                StartCurrent()
+                Notify("Gucci", "Switched to " .. Value, 2)
+            else
+                G.Version = newVer
+            end
+        end
+    })
+
+    GucciGroup:AddDropdown("GucciTypeSelect", {
+        Text = "Gucci Type",
+        Values = { "Blobman", "Tractor", "Santa Sleigh" },
+        Default = "Blobman",
+        Multi = false,
+        Tooltip = "ใช้กับ v1/v3 · v2 จะใช้ Blobman เสมอ",
+        Callback = function(Value)
+            G.Type = GucciTypes[Value] or "CreatureBlobman"
+        end
+    })
+
+    local GucciToggle = GucciGroup:AddCheckbox("GucciUnified", {
+        Text = "[GUCCI] Anti Grab (Unified)",
+        Tooltip = "Makes you unable to be touched by anyone or anything.",
+        Default = false,
+    })
+
+    GucciToggle:AddKeyPicker("GucciUnifiedKeybind", {
+        Default = "None",
+        Text = "Toggle Anti Grab",
+        Mode = "Toggle",
+        Callback = function(Value)
+            GucciToggle:SetValue(Value)
+        end,
+    })
+
+    GucciToggle:OnChanged(function(state)
+        G.Enabled = state
+        if state then
+            StartCurrent()
+            Notify("Gucci", "Anti-Grab ON (" .. G.Version .. ")", 2)
+        else
+            StopAll()
+            Notify("Gucci", "Anti-Grab OFF", 2)
+        end
+    end)
+end
+
+-- ═════════════════════════════════════
+-- UI SETTINGS TAB
+-- ═════════════════════════════════════
+MenuGroup = Tabs.UISettings:AddLeftGroupbox("Menu", "user-lock")
+BackGroup = Tabs.UISettings:AddRightGroupbox("Background", "mail")
+
+MenuGroup:AddCheckbox("KeybindMenuOpen", {
+    Text = "Open Keybind Menu",
+    Default = Library.KeybindFrame.Visible,
+    Callback = function(value)
+        Library.KeybindFrame.Visible = value
+    end,
+})
+
+MenuGroup:AddCheckbox("ShowCustomCursor", {
+    Text = "Custom Cursor",
+    Default = true,
+    Callback = function(Value)
+        Library.ShowCustomCursor = Value
+    end,
+})
+
+MenuGroup:AddDropdown("NotificationSide", {
+    Values = { "Left", "Right" },
+    Default = "Right",
+    Text = "Notification Side",
+    Callback = function(Value)
+        Library:SetNotifySide(Value)
+    end,
+})
+
+MenuGroup:AddDropdown("DPIDropdown", {
+    Values = { "50%", "75%", "100%", "125%", "150%", "175%", "200%" },
+    Default = "100%",
+    Text = "DPI Scale",
+    Callback = function(Value)
+        Value = Value:gsub("%%", "")
+        DPI = tonumber(Value)
+        Library:SetDPIScale(DPI)
+    end,
+})
+
+MenuGroup:AddDivider()
+
+MenuGroup:AddLabel("Menu bind"):AddKeyPicker("MenuKeybind", {
+    Default = "RightShift",
+    NoUI = true,
+    Text = "Menu keybind"
+})
+
+MenuGroup:AddButton({
+    Text = "Unload",
+    Func = function()
+        Library:Unload()
+    end,
+    DoubleClick = false
+})
+
+-- ── Background Section ──
+bgData = {
+    Enabled = true,
+    Image = "0",
+    Last = nil,
+    Transparency = 0.15
+}
+
+bgToken = 0
+
+local function formatImage(id)
+    id = tostring(id or ""):gsub("%s+", "")
+    if id == "" then return "rbxassetid://0" end
+    if id:find("rbxassetid://") then return id end
+    return "rbxassetid://" .. id
+end
+
+local function applyBackground()
+    bgToken = bgToken + 1
+    current = bgToken
+
+    task.delay(0.05, function()
+        if current ~= bgToken then return end
+        image = bgData.Enabled and formatImage(bgData.Image) or "rbxassetid://0"
+        if bgData.Last == image then return end
+        bgData.Last = image
+        pcall(function()
+            Window:SetBackgroundImage(image)
+            Window:SetBackgroundTransparency(bgData.Transparency)
+        end)
+    end)
+end
+
+BackGroup:AddCheckbox("EnableBackground", {
+    Text = "Enable Background",
+    Default = true,
+    Callback = function(Value)
+        bgData.Enabled = Value
+        applyBackground()
+    end
+})
+
+BackGroup:AddInput("BackgroundAsset", {
+    Text = "Asset ID",
+    Default = "0",
+    Callback = function(Value)
+        bgData.Image = tostring(Value)
+        applyBackground()
+    end
+})
+
+BackGroup:AddButton({
+    Text = "Clear Background",
+    Callback = function()
+        bgData.Image = "0"
+        applyBackground()
+    end
+})
+
+applyBackground()
+
+-- ═════════════════════════════════════
+-- Theme / SaveManager / Watermark
+-- ═════════════════════════════════════
+Library.ToggleKeybind = Options.MenuKeybind
+
+ThemeManager:SetLibrary(Library)
+SaveManager:SetLibrary(Library)
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
+ThemeManager:SetFolder("9rr")
+SaveManager:SetFolder("9rr/Configs")
+SaveManager:SetSubFolder("game-config")
+
+ThemeManager:ApplyToTab(Tabs.UISettings)
+SaveManager:BuildConfigSection(Tabs.UISettings)
+
+Window:SetCornerRadius(20)
+Library.ShowCustomCursor = true
+watermark = Library:AddDraggableLabel("•9rr | 0 FPS | 0 ms")
+
+task.spawn(function()
+    while task.wait(0.5) do
+        fps = math.floor(1 / game:GetService("RunService").RenderStepped:Wait())
+        ping = math.floor(game:GetService('Stats').Network.ServerStatsItem['Data Ping']:GetValue())
+        watermark:SetText(string.format("•9rr | %d FPS | %d ms", fps, ping))
+    end
+end)
+
+print("9rr Loaded, Sir3n and Oat is the goat frfr")
